@@ -186,7 +186,7 @@ Requirements:
   narration, quiet background music, burned-in subtitles,
   transitions, source card and final takeaway.
 - If evidence is weak, return "publish": false.
-
+'''
     client = genai.Client(
         api_key=env("GEMINI_API_KEY", required=True)
     )
