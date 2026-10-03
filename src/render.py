@@ -20,45 +20,192 @@ def get_font(size, bold=False):
     return ImageFont.load_default()
 
 def make_scene(scene, index, total):
-    image = Image.new("RGB", (W, H), (8, 12, 28))
+    image = Image.new("RGB", (W, H), (7, 11, 25))
     draw = ImageDraw.Draw(image)
-    accents = [(64, 190, 255), (120, 90, 255), (0, 220, 165), (255, 170, 70)]
+
+    accents = [
+        (64, 190, 255),
+        (130, 105, 255),
+        (0, 220, 165),
+        (255, 170, 70),
+    ]
     accent = accents[index % len(accents)]
 
+    # Background
     for y in range(H):
         k = y / H
-        draw.line([(0, y), (W, y)], fill=(int(8 + 16*k), int(12 + 15*(1-k)), int(28 + 32*k)))
+        draw.line(
+            [(0, y), (W, y)],
+            fill=(
+                int(7 + 13 * k),
+                int(11 + 12 * (1 - k)),
+                int(25 + 28 * k)
+            )
+        )
 
+    # Soft glow
     glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse((W*0.42 + index*17, H*0.03, W*1.10, H*0.45), fill=(*accent, 100))
-    glow = glow.filter(ImageFilter.GaussianBlur(80))
-    image = Image.alpha_composite(image.convert("RGBA"), glow).convert("RGB")
+
+    ImageDraw.Draw(glow).ellipse(
+        (
+            W * 0.15 + index * 20,
+            0,
+            W * 1.05,
+            H * 0.55
+        ),
+        fill=(*accent, 65)
+    )
+
+    glow = glow.filter(ImageFilter.GaussianBlur(100))
+
+    image = Image.alpha_composite(
+        image.convert("RGBA"),
+        glow
+    ).convert("RGB")
+
     draw = ImageDraw.Draw(image)
 
-    small, title, body, footer = get_font(34), get_font(74, True), get_font(44), get_font(30)
-    draw.text((64, 62), f"AI TECH DAILY / {index+1:02d}/{total:02d}", font=small, fill=(220, 230, 245))
+    # Fonts
+    small = get_font(30)
+    title = get_font(68, True)
+    footer = get_font(27)
 
+    # Header
+    draw.text(
+        (64, 55),
+        f"AI TECH DAILY • తెలుగు  {index + 1:02d}/{total:02d}",
+        font=small,
+        fill=(215, 226, 242)
+    )
+
+    # Progress bar
     progress = 940 * ((index + 1) / total)
-    draw.rounded_rectangle((64, 132, 1004, 148), 8, fill=(55, 65, 85))
-    draw.rounded_rectangle((64, 132, 64 + progress, 148), 8, fill=accent)
 
-    headline = textwrap.fill(scene.get("on_screen_text", "What changed?"), width=22)
-    draw.multiline_text((64, 260), headline, font=title, fill="white", spacing=8)
+    draw.rounded_rectangle(
+        (64, 115, 1004, 133),
+        9,
+        fill=(45, 55, 78)
+    )
 
-    panel_top = 710
-    draw.rounded_rectangle((58, panel_top, 1022, 1460), 34, fill=(11, 19, 38), outline=accent, width=3)
-    visual_text = textwrap.fill(scene.get("visual_concept", "Technology visual"), width=29)
-    draw.multiline_text((104, panel_top + 95), visual_text, font=body, fill=(232, 237, 247), spacing=18)
+    draw.rounded_rectangle(
+        (64, 115, 64 + progress, 133),
+        9,
+        fill=accent
+    )
 
-    base_y = 1250
-    for j in range(5):
-        height = 55 + ((index * 37 + j * 73) % 220)
-        x0 = 130 + j * 155
-        draw.rounded_rectangle((x0, base_y - height, x0 + 78, base_y), 12, fill=accent)
+    # Main headline only
+    headline = str(
+        scene.get(
+            "on_screen_text",
+            "ఇది ఎందుకు ముఖ్యమంటే?"
+        )
+    ).strip()
 
-    draw.text((64, 1770), "Original commentary • Sources in description", font=footer, fill=(185, 198, 220))
+    headline = textwrap.fill(
+        headline,
+        width=17
+    )
+
+    draw.multiline_text(
+        (64, 220),
+        headline,
+        font=title,
+        fill="white",
+        spacing=10,
+        stroke_width=2,
+        stroke_fill=(8, 12, 25)
+    )
+
+    # Main visual panel
+    panel = (65, 700, 1015, 1450)
+
+    draw.rounded_rectangle(
+        panel,
+        38,
+        fill=(11, 19, 38),
+        outline=accent,
+        width=4
+    )
+
+    # Clean abstract technology visual
+    center_x = 540
+    center_y = 1070
+
+    # Central AI chip
+    draw.rounded_rectangle(
+        (
+            center_x - 190,
+            center_y - 160,
+            center_x + 190,
+            center_y + 160
+        ),
+        40,
+        fill=(16, 28, 55),
+        outline=accent,
+        width=6
+    )
+
+    # Connection lines
+    for y in range(center_y - 110, center_y + 111, 55):
+        draw.line(
+            (
+                center_x - 250,
+                y,
+                center_x - 190,
+                y
+            ),
+            fill=accent,
+            width=8
+        )
+
+        draw.line(
+            (
+                center_x + 190,
+                y,
+                center_x + 250,
+                y
+            ),
+            fill=accent,
+            width=8
+        )
+
+    # AI label
+    draw.text(
+        (
+            center_x - 75,
+            center_y - 80
+        ),
+        "AI",
+        font=get_font(120, True),
+        fill="white"
+    )
+
+    # Small visual indicators
+    for i in range(5):
+        x = 180 + i * 180
+
+        draw.ellipse(
+            (
+                x - 18,
+                1280,
+                x + 18,
+                1316
+            ),
+            fill=accent
+        )
+
+    # Footer
+    draw.text(
+        (64, 1775),
+        "Original commentary • Sources in description",
+        font=footer,
+        fill=(165, 180, 205)
+    )
+
     output = OUTPUT / f"scene_{index:02d}.png"
+
     image.save(output)
+
     return output
 
 def probe_duration(path):
@@ -101,7 +248,7 @@ def render_short(story, voice_path):
             "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
             "[V4+ Styles]\n"
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            "Style: Default,DejaVu Sans,62,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90101010,-1,0,5,70,70,300,1\n"
+           Style: Default,Noto Sans Telugu,52,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90101010,-1,0,2,80,80,150,1
             "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         )
         for i, scene in enumerate(scenes):
