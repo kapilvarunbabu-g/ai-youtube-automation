@@ -4,6 +4,7 @@ from google.genai import types
 
 from .common import env, OUTPUT, write_json
 
+
 EDITORIAL = r'''
 You are the chief editor of a faceless AI + technology YouTube Shorts channel.
 
@@ -24,32 +25,34 @@ Rules:
 11. Avoid political persuasion, financial advice, medical advice and unsupported claims.
 '''
 
+
 def choose_and_write_story(pack):
     research = {
         "news": pack["candidates"][:90],
         "youtube_trends": pack["youtube_trends"][:25],
     }
 
-   language = env("CONTENT_LANGUAGE", "Telugu")
+    language = env("CONTENT_LANGUAGE", "Telugu")
 
-prompt = EDITORIAL + "\n\nTARGET LANGUAGE: " + language + "\n"
+    prompt = EDITORIAL + "\n\nTARGET LANGUAGE: " + language + "\n"
 
-prompt += f"""
+    prompt += f"""
 CRITICAL LANGUAGE RULES:
 
 - The spoken narration MUST be entirely in {language}.
 - Write the title, hook, script, scene text, captions and description in {language}.
 - Use natural, conversational Telugu suitable for a YouTube Shorts audience.
 - Do NOT translate word-for-word from English.
-- Technology names such as AI, Gemini, OpenAI, Apple, Microsoft, NVIDIA, ChatGPT etc. may remain in English when that sounds natural.
+- Technology names such as AI, Gemini, OpenAI, Apple, Microsoft, NVIDIA and ChatGPT may remain in English when that sounds natural.
 - Do not use English sentences in the narration.
 - The audience should understand the complete story without needing English.
 
 TODAY'S RESEARCH:
 """ + json.dumps(
-    research,
-    ensure_ascii=False,
-)
+        research,
+        ensure_ascii=False,
+    )
+
     prompt += r'''
 Return ONLY valid JSON:
 
@@ -60,7 +63,7 @@ Return ONLY valid JSON:
   "title": "...",
   "hook": "...",
   "script": "...",
-  "voice_style": "natural, energetic, conversational",
+  "voice_style": "warm, natural, energetic Telugu technology news presenter",
   "video_prompt": "...",
   "scenes": [
     {
@@ -71,8 +74,8 @@ Return ONLY valid JSON:
     }
   ],
   "description": "...",
-  "hashtags": ["#AI", "#Technology"],
-  "tags": ["ai", "technology"],
+  "hashtags": ["#AI", "#Technology", "#తెలుగు"],
+  "tags": ["ai", "technology", "telugu tech"],
   "sources": [
     {"title": "...", "url": "..."}
   ],
@@ -82,17 +85,17 @@ Return ONLY valid JSON:
 Requirements:
 - 40–55 seconds.
 - 105–135 spoken words.
+- 8 distinct scenes.
+- Strong hook in the first sentence.
 - The narration must be natural Telugu.
 - The first sentence must be a strong Telugu hook.
 - Each scene must have short, readable Telugu on-screen text.
 - Captions must match the Telugu narration.
 - Avoid long paragraphs on screen.
-- 8 distinct scenes.
-- Strong hook in the first sentence.
 - Explain what changed and why it matters.
 - End with a useful takeaway.
-- The video_prompt must describe a realistic, polished 9:16 vertical short with:
-  natural camera motion, human-like pacing, clean typography,
+- The video_prompt must describe a polished 9:16 vertical short.
+- Include natural camera motion, human-like pacing, clean typography,
   narration, quiet background music, burned-in subtitles,
   transitions, source card and final takeaway.
 - Save the story-specific video prompt even though the default renderer is local.
@@ -116,12 +119,27 @@ Requirements:
 
     if not story.get("publish"):
         raise RuntimeError("Editorial gate rejected today's story.")
+
     if float(story.get("confidence", 0)) < 0.80:
         raise RuntimeError("Editorial confidence below 0.80.")
+
     if len(story.get("script", "").split()) < 85:
         raise RuntimeError("Script is too short.")
+
     if len(story.get("scenes", [])) < 8:
         raise RuntimeError("At least 8 scenes are required.")
 
+    if language.lower() == "telugu":
+        has_telugu = any(
+            "\u0c00" <= ch <= "\u0c7f"
+            for ch in story.get("script", "")
+        )
+
+        if not has_telugu:
+            raise RuntimeError(
+                "The generated narration is not in Telugu."
+            )
+
     write_json(OUTPUT / "story.json", story)
+
     return story
