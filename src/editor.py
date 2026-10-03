@@ -30,11 +30,26 @@ def choose_and_write_story(pack):
         "youtube_trends": pack["youtube_trends"][:25],
     }
 
-    prompt = EDITORIAL + "\n\nTODAY'S RESEARCH:\n" + json.dumps(
-        research,
-        ensure_ascii=False,
-    )
+   language = env("CONTENT_LANGUAGE", "Telugu")
 
+prompt = EDITORIAL + "\n\nTARGET LANGUAGE: " + language + "\n"
+
+prompt += f"""
+CRITICAL LANGUAGE RULES:
+
+- The spoken narration MUST be entirely in {language}.
+- Write the title, hook, script, scene text, captions and description in {language}.
+- Use natural, conversational Telugu suitable for a YouTube Shorts audience.
+- Do NOT translate word-for-word from English.
+- Technology names such as AI, Gemini, OpenAI, Apple, Microsoft, NVIDIA, ChatGPT etc. may remain in English when that sounds natural.
+- Do not use English sentences in the narration.
+- The audience should understand the complete story without needing English.
+
+TODAY'S RESEARCH:
+""" + json.dumps(
+    research,
+    ensure_ascii=False,
+)
     prompt += r'''
 Return ONLY valid JSON:
 
@@ -67,6 +82,11 @@ Return ONLY valid JSON:
 Requirements:
 - 40–55 seconds.
 - 105–135 spoken words.
+- The narration must be natural Telugu.
+- The first sentence must be a strong Telugu hook.
+- Each scene must have short, readable Telugu on-screen text.
+- Captions must match the Telugu narration.
+- Avoid long paragraphs on screen.
 - 8 distinct scenes.
 - Strong hook in the first sentence.
 - Explain what changed and why it matters.
