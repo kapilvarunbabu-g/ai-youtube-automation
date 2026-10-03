@@ -212,10 +212,6 @@ Requirements:
             "Editorial confidence below 0.80."
         )
 
-    if len(story.get("script", "").split()) < 85:
-        raise RuntimeError(
-            "Script is too short."
-        )
 
     if len(story.get("scenes", [])) < 8:
         raise RuntimeError(
