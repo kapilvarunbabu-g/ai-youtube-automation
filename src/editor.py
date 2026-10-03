@@ -1,4 +1,5 @@
 import json
+import time
 from google import genai
 from google.genai import types
 
@@ -106,14 +107,38 @@ Requirements:
         api_key=env("GEMINI_API_KEY", required=True)
     )
 
-    response = client.models.generate_content(
-        model=env("GEMINI_MODEL", "gemini-3.8-flash"),
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.65,
-        ),
-    )
+    model = env("GEMINI_MODEL", "gemini-3.8-flash")
+
+    # Retry temporary Gemini server/rate-limit errors.
+    response = None
+
+    for attempt in range(4):
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.65,
+                ),
+            )
+            break
+
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", None)
+
+            if status_code not in (429, 500, 502, 503, 504) or attempt == 3:
+                raise
+
+            wait_seconds = 10 * (2 ** attempt)
+
+            print(
+                f"Gemini temporary error {status_code}. "
+                f"Retrying in {wait_seconds}s "
+                f"(attempt {attempt + 1}/4)..."
+            )
+
+            time.sleep(wait_seconds)
 
     story = json.loads(response.text)
 
