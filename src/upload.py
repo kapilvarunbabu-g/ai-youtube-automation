@@ -38,7 +38,8 @@ def upload_video(story, video_path):
                 "description": description[:4950],
                 "tags": story.get("tags", [])[:20],
                 "categoryId": "28",
-                "defaultLanguage": "en",
+                "defaultLanguage": "te",
+                "defaultAudioLanguage": "te",
             },
             "status": {
                 "privacyStatus": privacy,
