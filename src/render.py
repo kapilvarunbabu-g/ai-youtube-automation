@@ -248,7 +248,7 @@ def render_short(story, voice_path):
             "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
             "[V4+ Styles]\n"
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-           Style: Default,Noto Sans Telugu,52,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90101010,-1,0,2,80,80,150,1
+           Style: Default,Noto Sans Telugu,52,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90101010,-1,0,2,80,80,150,1\n"
             "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         )
         for i, scene in enumerate(scenes):
