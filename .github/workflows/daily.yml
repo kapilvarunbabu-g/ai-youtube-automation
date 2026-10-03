@@ -48,7 +48,8 @@ jobs:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: |
           python main.py
-                - name: Send Telegram success notification
+
+      - name: Send Telegram success notification
         if: success()
         continue-on-error: true
         env:
