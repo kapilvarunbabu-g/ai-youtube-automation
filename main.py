@@ -4,6 +4,8 @@ from src.sheet import update_workbook
 from src.voice import generate_voice
 from src.render import render_short
 from src.upload import upload_video
+import json
+from pathlib import Path
 
 def main():
     pack = build_research_pack()
@@ -20,17 +22,27 @@ def main():
         story.get("voice_style", "natural, energetic, conversational"),
     )
 
-    video_path = render_short(story, voice_path)
+video_id, url = upload_video(story, video_path)
 
-    video_id, url = upload_video(story, video_path)
+published = {
+    "video_id": video_id,
+    "url": url,
+    "title": story["title"]
+}
 
-    update_workbook(
-        research_rows=[],
-        selected_story=story,
-        published={"video_id": video_id, "url": url},
-    )
+Path("output").mkdir(parents=True, exist_ok=True)
 
-    print("Published:", url)
+Path("output/published.json").write_text(
+    json.dumps(published, ensure_ascii=False, indent=2),
+    encoding="utf-8"
+)
 
+update_workbook(
+    research_rows=[],
+    selected_story=story,
+    published={"video_id": video_id, "url": url}
+)
+
+print("Published:", url)
 if __name__ == "__main__":
     main()
