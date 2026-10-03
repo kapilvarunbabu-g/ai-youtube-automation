@@ -1,280 +1,481 @@
 from pathlib import Path
+import re
 import subprocess
 import textwrap
 
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 
 from .common import OUTPUT
 from .music import make_music
+from .stock_video import search_and_download
 
 W, H = 1080, 1920
 
+
 def get_font(size, bold=False):
     candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        (
+            "/usr/share/fonts/opentype/noto/"
+            "NotoSansTelugu-Bold.ttf"
+            if bold
+            else
+            "/usr/share/fonts/opentype/noto/"
+            "NotoSansTelugu-Regular.ttf"
+        ),
+        (
+            "/usr/share/fonts/truetype/noto/"
+            "NotoSansTelugu-Bold.ttf"
+            if bold
+            else
+            "/usr/share/fonts/truetype/noto/"
+            "NotoSansTelugu-Regular.ttf"
+        ),
+        (
+            "/usr/share/fonts/truetype/dejavu/"
+            "DejaVuSans-Bold.ttf"
+            if bold
+            else
+            "/usr/share/fonts/truetype/dejavu/"
+            "DejaVuSans.ttf"
+        ),
     ]
+
     for path in candidates:
         if Path(path).exists():
             return ImageFont.truetype(path, size)
+
+    result = subprocess.run(
+        ["fc-match", "-f", "%{file}", "Noto Sans Telugu"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    path = result.stdout.strip()
+
+    if path and Path(path).exists():
+        return ImageFont.truetype(path, size)
+
     return ImageFont.load_default()
 
-def make_scene(scene, index, total):
-    image = Image.new("RGB", (W, H), (7, 11, 25))
-    draw = ImageDraw.Draw(image)
-
-    accents = [
-        (64, 190, 255),
-        (130, 105, 255),
-        (0, 220, 165),
-        (255, 170, 70),
-    ]
-    accent = accents[index % len(accents)]
-
-    # Background
-    for y in range(H):
-        k = y / H
-        draw.line(
-            [(0, y), (W, y)],
-            fill=(
-                int(7 + 13 * k),
-                int(11 + 12 * (1 - k)),
-                int(25 + 28 * k)
-            )
-        )
-
-    # Soft glow
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-
-    ImageDraw.Draw(glow).ellipse(
-        (
-            W * 0.15 + index * 20,
-            0,
-            W * 1.05,
-            H * 0.55
-        ),
-        fill=(*accent, 65)
-    )
-
-    glow = glow.filter(ImageFilter.GaussianBlur(100))
-
-    image = Image.alpha_composite(
-        image.convert("RGBA"),
-        glow
-    ).convert("RGB")
-
-    draw = ImageDraw.Draw(image)
-
-    # Fonts
-    small = get_font(30)
-    title = get_font(68, True)
-    footer = get_font(27)
-
-    # Header
-    draw.text(
-        (64, 55),
-        f"AI TECH DAILY • తెలుగు  {index + 1:02d}/{total:02d}",
-        font=small,
-        fill=(215, 226, 242)
-    )
-
-    # Progress bar
-    progress = 940 * ((index + 1) / total)
-
-    draw.rounded_rectangle(
-        (64, 115, 1004, 133),
-        9,
-        fill=(45, 55, 78)
-    )
-
-    draw.rounded_rectangle(
-        (64, 115, 64 + progress, 133),
-        9,
-        fill=accent
-    )
-
-    # Main headline only
-    headline = str(
-        scene.get(
-            "on_screen_text",
-            "ఇది ఎందుకు ముఖ్యమంటే?"
-        )
-    ).strip()
-
-    headline = textwrap.fill(
-        headline,
-        width=17
-    )
-
-    draw.multiline_text(
-        (64, 220),
-        headline,
-        font=title,
-        fill="white",
-        spacing=10,
-        stroke_width=2,
-        stroke_fill=(8, 12, 25)
-    )
-
-    # Main visual panel
-    panel = (65, 700, 1015, 1450)
-
-    draw.rounded_rectangle(
-        panel,
-        38,
-        fill=(11, 19, 38),
-        outline=accent,
-        width=4
-    )
-
-    # Clean abstract technology visual
-    center_x = 540
-    center_y = 1070
-
-    # Central AI chip
-    draw.rounded_rectangle(
-        (
-            center_x - 190,
-            center_y - 160,
-            center_x + 190,
-            center_y + 160
-        ),
-        40,
-        fill=(16, 28, 55),
-        outline=accent,
-        width=6
-    )
-
-    # Connection lines
-    for y in range(center_y - 110, center_y + 111, 55):
-        draw.line(
-            (
-                center_x - 250,
-                y,
-                center_x - 190,
-                y
-            ),
-            fill=accent,
-            width=8
-        )
-
-        draw.line(
-            (
-                center_x + 190,
-                y,
-                center_x + 250,
-                y
-            ),
-            fill=accent,
-            width=8
-        )
-
-    # AI label
-    draw.text(
-        (
-            center_x - 75,
-            center_y - 80
-        ),
-        "AI",
-        font=get_font(120, True),
-        fill="white"
-    )
-
-    # Small visual indicators
-    for i in range(5):
-        x = 180 + i * 180
-
-        draw.ellipse(
-            (
-                x - 18,
-                1280,
-                x + 18,
-                1316
-            ),
-            fill=accent
-        )
-
-    # Footer
-    draw.text(
-        (64, 1775),
-        "Original commentary • Sources in description",
-        font=footer,
-        fill=(165, 180, 205)
-    )
-
-    output = OUTPUT / f"scene_{index:02d}.png"
-
-    image.save(output)
-
-    return output
 
 def probe_duration(path):
-    result = subprocess.run([
-        "ffprobe", "-v", "error", "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1", str(path)
-    ], capture_output=True, text=True, check=True)
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
     return float(result.stdout.strip())
+
 
 def ass_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = seconds % 60
+
     return f"{hours}:{minutes:02d}:{secs:05.2f}"
 
+
 def escape_ass(text):
-    return str(text).replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
+    return (
+        str(text)
+        .replace("\\", "\\\\")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+    )
+
+
+def split_caption_text(text, max_words=12):
+    words = str(text).split()
+
+    if len(words) <= max_words:
+        return str(text).strip()
+
+    lines = []
+
+    for i in range(0, len(words), max_words):
+        lines.append(" ".join(words[i:i + max_words]))
+
+    return "\\N".join(lines[:3])
+
+
+def subtitle_segments(script, total_duration):
+    clean = " ".join(str(script).split())
+
+    # Split according to Telugu/English sentence punctuation.
+    sentences = [
+        p.strip()
+        for p in re.split(
+            r"(?<=[.!?।])\s+",
+            clean,
+        )
+        if p.strip()
+    ]
+
+    if not sentences:
+        return [(0.0, total_duration, clean)]
+
+    # Approximate speech timing from word count.
+    # This keeps subtitles synchronized with narration much better
+    # than assigning one caption to every video scene.
+    weights = [
+        max(1, len(sentence.split()))
+        for sentence in sentences
+    ]
+
+    total_weight = sum(weights)
+
+    segments = []
+    cursor = 0.0
+
+    for index, (sentence, weight) in enumerate(
+        zip(sentences, weights)
+    ):
+        if index == len(sentences) - 1:
+            end = total_duration
+        else:
+            duration = (
+                total_duration
+                * weight
+                / total_weight
+            )
+
+            end = min(
+                total_duration,
+                cursor + duration,
+            )
+
+        segments.append(
+            (
+                cursor,
+                end,
+                split_caption_text(sentence),
+            )
+        )
+
+        cursor = end
+
+    return segments
+
+
+def render_stock_clip(
+    input_path,
+    output_path,
+    seconds,
+):
+    # Convert any landscape/portrait stock footage
+    # into a vertical 9:16 frame while preserving the
+    # important central area.
+    command = [
+        "ffmpeg",
+        "-y",
+        "-stream_loop",
+        "-1",
+        "-i",
+        str(input_path),
+        "-t",
+        f"{seconds:.3f}",
+        "-vf",
+        (
+            "scale=1080:1920:"
+            "force_original_aspect_ratio=increase,"
+            "crop=1080:1920,"
+            "fps=30,"
+            "format=yuv420p"
+        ),
+        "-an",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "21",
+        str(output_path),
+    ]
+
+    subprocess.run(
+        command,
+        check=True,
+    )
+
+
+def get_real_stock_video(scene, topic, index):
+    queries = []
+
+    primary = scene.get("stock_search_query")
+
+    if primary:
+        queries.append(primary)
+
+    visual = scene.get("visual_concept")
+
+    if visual:
+        queries.append(visual)
+
+    if topic:
+        queries.append(
+            f"{topic} technology"
+        )
+
+    # Real-video fallbacks.
+    queries.extend(
+        [
+            "artificial intelligence technology",
+            "technology data center servers",
+            "software developer coding",
+        ]
+    )
+
+    already_tried = set()
+
+    for query in queries:
+        query = " ".join(
+            str(query).split()
+        ).strip()
+
+        if not query:
+            continue
+
+        if query.lower() in already_tried:
+            continue
+
+        already_tried.add(query.lower())
+
+        try:
+            video_path, attribution = (
+                search_and_download(
+                    query,
+                    index,
+                )
+            )
+
+            return video_path, attribution
+
+        except Exception as exc:
+            print(
+                f"Stock search failed for "
+                f"'{query}': {exc}"
+            )
+
+    raise RuntimeError(
+        "Unable to obtain a real stock video "
+        f"for scene {index + 1}."
+    )
+
 
 def render_short(story, voice_path):
-    duration = probe_duration(voice_path)
-    music = make_music(max(60, int(duration) + 3))
-    scenes = story.get("scenes", [])
+    duration = probe_duration(
+        voice_path
+    )
+
+    scenes = story.get(
+        "scenes",
+        [],
+    )
+
     if len(scenes) < 8:
-        raise RuntimeError("The editor must provide 8 scenes.")
+        raise RuntimeError(
+            "The editor must provide 8 scenes."
+        )
+
     scenes = scenes[:8]
-    images = [make_scene(scene, i, len(scenes)) for i, scene in enumerate(scenes)]
-    each = duration / len(images)
 
+    each_duration = (
+        duration / len(scenes)
+    )
+
+    clip_paths = []
+    stock_sources = []
+
+    topic = story.get(
+        "topic",
+        "technology",
+    )
+
+    # Download and prepare real video footage
+    # for every scene.
+    for index, scene in enumerate(scenes):
+        source_path, attribution = (
+            get_real_stock_video(
+                scene,
+                topic,
+                index,
+            )
+        )
+
+        normalized_path = (
+            OUTPUT
+            / f"real_clip_{index:02d}.mp4"
+        )
+
+        render_stock_clip(
+            source_path,
+            normalized_path,
+            each_duration,
+        )
+
+        clip_paths.append(
+            normalized_path
+        )
+
+        stock_sources.append(
+            attribution
+        )
+
+        print(
+            f"Scene {index + 1}/"
+            f"{len(scenes)} ready."
+        )
+
+    # Combine all real video clips.
     concat = OUTPUT / "concat.txt"
-    with concat.open("w", encoding="utf-8") as f:
-        for i, image in enumerate(images):
-            f.write(f"file '{image.as_posix()}'\n")
-            if i < len(images) - 1:
-                f.write(f"duration {each:.3f}\n")
-        f.write(f"file '{images[-1].as_posix()}'\n")
 
+    with concat.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        for clip in clip_paths:
+            file.write(
+                f"file '{clip.as_posix()}'\n"
+            )
+
+    # Create speech-timed Telugu subtitles.
     ass = OUTPUT / "captions.ass"
-    with ass.open("w", encoding="utf-8") as f:
-        f.write(
+
+    with ass.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        file.write(
             "[Script Info]\n"
             "ScriptType: v4.00+\n"
             "PlayResX: 1080\n"
             "PlayResY: 1920\n"
             "[V4+ Styles]\n"
-            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            "Style: Default,Noto Sans Telugu,52,&H00FFFFFF,&H00FFFFFF,&H00101010,&H90101010,-1,0,2,80,80,150,1\n"
+            "Format: Name, Fontname, Fontsize, "
+            "PrimaryColour, SecondaryColour, "
+            "OutlineColour, BackColour, Bold, "
+            "Italic, Alignment, MarginL, MarginR, "
+            "MarginV, Encoding\n"
+            "Style: Telugu,Noto Sans Telugu,52,"
+            "&H00FFFFFF,&H00FFFFFF,&H00141414,"
+            "&H96000000,-1,0,2,70,70,220,1\n"
             "[Events]\n"
-            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+            "Format: Layer, Start, End, Style, "
+            "Name, MarginL, MarginR, MarginV, "
+            "Effect, Text\n"
         )
 
-        for i, scene in enumerate(scenes):
-            start, end = i * each, min(duration, (i + 1) * each)
-            caption = escape_ass(scene.get("caption", scene.get("on_screen_text", "")))
-            f.write(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,{caption}\n")
+        segments = subtitle_segments(
+            story.get(
+                "script",
+                "",
+            ),
+            duration,
+        )
 
-    subtitle_path = ass.as_posix().replace(":", r"\:")
-    output = OUTPUT / "video.mp4"
+        for start, end, caption in segments:
+            file.write(
+                "Dialogue: 0,"
+                f"{ass_time(start)},"
+                f"{ass_time(end)},"
+                "Telugu,,0,0,0,,"
+                "{\\q2}"
+                f"{escape_ass(caption)}\n"
+            )
+
+    subtitle_path = (
+        ass.as_posix()
+        .replace(":", r"\:")
+    )
+
+    music = make_music(
+        max(
+            60,
+            int(duration) + 3,
+        )
+    )
+
+    output = (
+        OUTPUT
+        / "video.mp4"
+    )
+
+    # Video + Telugu subtitles + voice + music.
     command = [
-        "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0", "-i", str(concat),
-        "-i", str(voice_path), "-i", str(music),
+        "ffmpeg",
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        str(concat),
+        "-i",
+        str(voice_path),
+        "-i",
+        str(music),
         "-filter_complex",
-        f"[0:v]scale=1080:1920,zoompan=z='min(zoom+0.0008,1.025)':d=1:s=1080x1920:fps=30,format=yuv420p,subtitles={subtitle_path}[v];"
-        f"[1:a]loudnorm=I=-16:TP=-1.5:LRA=11[voice];"
-        f"[2:a]volume=0.16,atrim=0:{duration}[bg];"
-        "[voice][bg]amix=inputs=2:duration=first:dropout_transition=2[a]",
-        "-map", "[v]", "-map", "[a]", "-t", str(duration), "-r", "30",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
-        "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output),
+        (
+            f"[0:v]"
+            f"subtitles={subtitle_path}"
+            f"[v];"
+            f"[1:a]"
+            f"loudnorm="
+            f"I=-16:TP=-1.5:LRA=11"
+            f"[voice];"
+            f"[2:a]"
+            f"volume=0.08,"
+            f"atrim=0:{duration}"
+            f"[bg];"
+            f"[voice][bg]"
+            f"amix=inputs=2:"
+            f"duration=first:"
+            f"dropout_transition=2"
+            f"[a]"
+        ),
+        "-map",
+        "[v]",
+        "-map",
+        "[a]",
+        "-t",
+        f"{duration:.3f}",
+        "-r",
+        "30",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "20",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "160k",
+        "-movflags",
+        "+faststart",
+        str(output),
     ]
-    subprocess.run(command, check=True)
+
+    subprocess.run(
+        command,
+        check=True,
+    )
+
+    # Keep footage credits for YouTube description.
+    story["stock_sources"] = (
+        stock_sources
+    )
+
     return output
