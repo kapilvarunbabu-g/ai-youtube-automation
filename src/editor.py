@@ -1,5 +1,6 @@
 import json
 import time
+
 from google import genai
 from google.genai import types
 
@@ -25,6 +26,74 @@ Rules:
 10. Write like a smart human technology creator: conversational and concise.
 11. Avoid political persuasion, financial advice, medical advice and unsupported claims.
 '''
+
+
+def is_transient_gemini_error(exc):
+    text = str(exc).upper()
+
+    transient_errors = [
+        "408",
+        "429",
+        "500",
+        "502",
+        "503",
+        "504",
+        "UNAVAILABLE",
+        "RESOURCE_EXHAUSTED",
+        "INTERNAL",
+        "BAD_GATEWAY",
+        "GATEWAY_TIMEOUT",
+    ]
+
+    return any(error in text for error in transient_errors)
+
+
+def generate_with_retry(client, model_names, prompt):
+    last_error = None
+
+    for model_name in model_names:
+        print(f"Trying Gemini model: {model_name}")
+
+        for attempt in range(4):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.65,
+                    ),
+                )
+
+                print(f"Gemini success with model: {model_name}")
+                return response
+
+            except Exception as exc:
+                last_error = exc
+
+                if not is_transient_gemini_error(exc):
+                    raise
+
+                if attempt == 3:
+                    print(
+                        f"Gemini model {model_name} failed after "
+                        f"4 attempts. Error: {exc}"
+                    )
+                    break
+
+                wait_seconds = 5 * (2 ** attempt)
+
+                print(
+                    f"Temporary Gemini error on {model_name}. "
+                    f"Retrying in {wait_seconds}s "
+                    f"(attempt {attempt + 1}/4)..."
+                )
+
+                time.sleep(wait_seconds)
+
+        print(f"Trying fallback model after {model_name}.")
+
+    raise last_error
 
 
 def choose_and_write_story(pack):
@@ -99,7 +168,6 @@ Requirements:
 - Include natural camera motion, human-like pacing, clean typography,
   narration, quiet background music, burned-in subtitles,
   transitions, source card and final takeaway.
-- Save the story-specific video prompt even though the default renderer is local.
 - If evidence is weak, return "publish": false.
 '''
 
@@ -107,52 +175,47 @@ Requirements:
         api_key=env("GEMINI_API_KEY", required=True)
     )
 
-    model = env("GEMINI_MODEL", "gemini-3.8-flash")
+    primary_model = env(
+        "GEMINI_MODEL",
+        "gemini-3.8-flash"
+    )
 
-    # Retry temporary Gemini server/rate-limit errors.
-    response = None
+    # Stable fallback model if the primary model is temporarily overloaded.
+    model_names = [
+        primary_model,
+        "gemini-3.7-flash",
+    ]
 
-    for attempt in range(4):
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.65,
-                ),
-            )
-            break
+    # Remove duplicate model names while preserving order.
+    model_names = list(dict.fromkeys(model_names))
 
-        except Exception as exc:
-            status_code = getattr(exc, "status_code", None)
-
-            if status_code not in (429, 500, 502, 503, 504) or attempt == 3:
-                raise
-
-            wait_seconds = 10 * (2 ** attempt)
-
-            print(
-                f"Gemini temporary error {status_code}. "
-                f"Retrying in {wait_seconds}s "
-                f"(attempt {attempt + 1}/4)..."
-            )
-
-            time.sleep(wait_seconds)
+    response = generate_with_retry(
+        client,
+        model_names,
+        prompt,
+    )
 
     story = json.loads(response.text)
 
     if not story.get("publish"):
-        raise RuntimeError("Editorial gate rejected today's story.")
+        raise RuntimeError(
+            "Editorial gate rejected today's story."
+        )
 
     if float(story.get("confidence", 0)) < 0.80:
-        raise RuntimeError("Editorial confidence below 0.80.")
+        raise RuntimeError(
+            "Editorial confidence below 0.80."
+        )
 
     if len(story.get("script", "").split()) < 85:
-        raise RuntimeError("Script is too short.")
+        raise RuntimeError(
+            "Script is too short."
+        )
 
     if len(story.get("scenes", [])) < 8:
-        raise RuntimeError("At least 8 scenes are required.")
+        raise RuntimeError(
+            "At least 8 scenes are required."
+        )
 
     if language.lower() == "telugu":
         has_telugu = any(
@@ -165,6 +228,9 @@ Requirements:
                 "The generated narration is not in Telugu."
             )
 
-    write_json(OUTPUT / "story.json", story)
+    write_json(
+        OUTPUT / "story.json",
+        story
+    )
 
     return story
