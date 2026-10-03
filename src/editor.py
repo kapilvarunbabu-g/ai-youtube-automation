@@ -139,6 +139,7 @@ Return ONLY valid JSON:
     {
       "on_screen_text": "...",
       "visual_concept": "...",
+      "stock_search_query": "...",
       "caption": "...",
       "seconds": 5
     }
@@ -159,7 +160,11 @@ Requirements:
 - Strong hook in the first sentence.
 - The narration must be natural Telugu.
 - The first sentence must be a strong Telugu hook.
-- Each scene must have short, readable Telugu on-screen text.
+- Each scene must have short, readable Telugu on-screen text, preferably under 45 characters.
+- Each scene MUST include a concise English "stock_search_query".
+- The stock_search_query must contain 3–7 concrete keywords describing realistic footage relevant to that scene.
+- Prefer real-world footage such as data centers, smartphones, developers, robots, factories, offices, chips, servers or people using technology.
+- Never use the same stock_search_query for all scenes.
 - Captions must match the Telugu narration.
 - Avoid long paragraphs on screen.
 - Explain what changed and why it matters.
