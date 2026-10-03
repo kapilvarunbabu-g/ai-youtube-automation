@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
 
-   - name: Install FFmpeg and Telugu fonts
+       - name: Install FFmpeg and Telugu fonts
   run: |
     sudo apt-get update
     sudo apt-get install -y ffmpeg fonts-noto-core fonts-noto-extra
