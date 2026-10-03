@@ -1,0 +1,12 @@
+Repository Variables
+
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_TTS_MODEL=gemini-3.8-flash-lite-tts
+TTS_VOICE=Kore
+YOUTUBE_PRIVACY_STATUS=private
+
+Repository Secrets
+
+GEMINI_API_KEY=...
+YOUTUBE_API_KEY=...
+YOUTUBE_TOKEN_JSON=...complete token.json contents...
