@@ -96,7 +96,7 @@ def escape_ass(text):
     )
 
 
-def split_caption_text(text, max_words=12):
+def split_caption_text(text, max_words=8):
     words = str(text).split()
 
     if len(words) <= max_words:
@@ -222,20 +222,13 @@ def get_real_stock_video(scene, topic, index):
 
     if visual:
         queries.append(visual)
-
     if topic:
-        queries.append(
-            f"{topic} technology"
+          queries.append(
+            f"{primary or visual or topic} {topic}"
         )
 
-    # Real-video fallbacks.
-    queries.extend(
-        [
-            "artificial intelligence technology",
-            "technology data center servers",
-            "software developer coding",
-        ]
-    )
+# Do not fall back to unrelated generic AI footage.
+# Every attempt should remain tied to the current scene.
 
     already_tried = set()
 
@@ -368,9 +361,9 @@ def render_short(story, voice_path):
             "OutlineColour, BackColour, Bold, "
             "Italic, Alignment, MarginL, MarginR, "
             "MarginV, Encoding\n"
-            "Style: Telugu,Noto Sans Telugu,52,"
-            "&H00FFFFFF,&H00FFFFFF,&H00141414,"
-            "&H96000000,-1,0,2,70,70,220,1\n"
+            "Style: Telugu,Noto Sans Telugu,60,"
+            "&H00FFFFFF,&H00FFFFFF,&H00000000,"
+            "&H30000000,-1,0,8,70,70,250,1\n"
             "[Events]\n"
             "Format: Layer, Start, End, Style, "
             "Name, MarginL, MarginR, MarginV, "
@@ -391,7 +384,7 @@ def render_short(story, voice_path):
                 f"{ass_time(start)},"
                 f"{ass_time(end)},"
                 "Telugu,,0,0,0,,"
-                "{\\q2}"
+                "{\\q2\\bord3\\shad1}"
                 f"{escape_ass(caption)}\n"
             )
 
