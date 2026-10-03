@@ -162,9 +162,21 @@ Requirements:
 - The first sentence must be a strong Telugu hook.
 - Each scene must have short, readable Telugu on-screen text, preferably under 45 characters.
 - Each scene MUST include a concise English "stock_search_query".
-- The stock_search_query must contain 3–7 concrete keywords describing realistic footage relevant to that scene.
-- Prefer real-world footage such as data centers, smartphones, developers, robots, factories, offices, chips, servers or people using technology.
-- Never use the same stock_search_query for all scenes.
+- The stock_search_query must contain 4–7 concrete visual keywords.
+- The query must describe what should literally be visible in the footage.
+- Build the query from the EXACT subject of that scene, not from the broad category "AI" or "technology".
+- When a scene discusses a specific company, product, device, robot, chip, model or application, include that specific entity in the query when appropriate.
+- Prefer physical, visually searchable subjects such as smartphone screen, developer coding, server racks, GPU chip, robot arm, factory floor, data center, office worker, autonomous vehicle, computer lab, cloud servers or people using a device.
+- Avoid vague queries such as "AI technology", "future technology", "digital innovation", "business technology" or "modern computer".
+- Never use the same stock_search_query for different scenes.
+- Each scene's visual_concept and stock_search_query must directly support the sentence being narrated in that scene.
+- Do not choose footage that could misrepresent a stock clip as actual footage of the reported event. Use representative footage when exact event footage is unavailable.
+- For every scene, first identify the main factual idea being spoken.
+- Then create a visual_concept showing the clearest real-world representation of that idea.
+- Then create the stock_search_query from that visual_concept.
+- Scene 1 must visually represent the hook.
+- Scenes 2–7 must visually follow the story in the same order as the narration.
+- Scene 8 must visually represent the result, implication or takeaway.
 - Captions must match the Telugu narration.
 - Avoid long paragraphs on screen.
 - Explain what changed and why it matters.
