@@ -174,7 +174,7 @@ It should publish a distinct story, explanation and scene plan every day.
 
 ## 10. First test
 
-Keep YOUTUBE_PRIVACY_STATUS=private.
+Keep YOUTUBE_PRIVACY_STATUS=public.
 
 Run the workflow manually.
 
